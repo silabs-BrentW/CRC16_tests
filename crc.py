@@ -49,36 +49,49 @@ def crc16_single(byte, crc=0, table=_CRC16_XMODEM_TABLE):
     crc = ((crc<<8) & 0xff00) ^ table[((crc>>8) & 0xff) ^ byte]
     return crc & 0xffff
 
+# check to see if LSB of each element in the CRC table is unique
+table = _CRC16_XMODEM_TABLE
+testlist = []
+for i in range(len(table)):
+    x = table[i] & 0x00ff
+    print("{0:#02x}, {1:#04x}".format(i,x))
+    if x in testlist:
+        print("0x{0:02x} appears more than once. Entry is 0x{1:04x}, and index is {2}".format(x, table[i], i))
+    else:
+        testlist.append(x)
+
+print("wait here")
+""" 
 forward_array = []
 
 if os.path.exists('forward_array.txt'):
-    with open('forward_array.txt','r') as f:
+    with open('forward_array.txt', 'r') as f:
         forward_array = json.load(f)
 else:
-    for crc in range (0,65536):
+    for crc in range(0, 65536):
         for byte in range(256):
-            forward_array.append(crc16_single(byte,crc))
+            forward_array.append(crc16_single(byte, crc))
 
     with open('forward_array.txt', 'w') as f:
-        json.dump (forward_array, f)
+        json.dump(forward_array, f)
 
 #reverse_array is a list of lists. The main index is the crc value. The value at that index is a list of all crc+data combinations that mapped to that crc
 reverse_array = [[]for x in range(65536)]
 
 if os.path.exists('reverse_array.txt'):
-    with open('reverse_array.txt','r') as f:
+    with open('reverse_array.txt', 'r') as f:
         reverse_array = json.load(f)
 else:
-    for crc in range (65536):
+    for crc in range(65536):
         for i in range(len(forward_array)):
             if (forward_array[i] == crc):
                 reverse_array[crc].append(i)
-    with open('reverse_array.txt','w') as f:
-        json.dump (reverse_array, f)
+    with open('reverse_array.txt', 'w') as f:
+        json.dump(reverse_array, f)
 
+for i in range(10):
+    print(forward_array[i])
 
-for i in range (10):
-    print (forward_array[i])
-
-for i in range (10):
-    print (reverse_array[i])
+for i in range(10):
+    print(reverse_array[i])
+ """

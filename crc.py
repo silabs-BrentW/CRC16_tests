@@ -49,20 +49,35 @@ def crc16_single(byte, crc=0, table=_CRC16_XMODEM_TABLE):
     crc = ((crc<<8) & 0xff00) ^ table[((crc>>8) & 0xff) ^ byte]
     return crc & 0xffff
 
-# check to see if LSB of each element in the CRC table is unique
-table = _CRC16_XMODEM_TABLE
-testlist = []
-for i in range(len(table)):
-    x = table[i] & 0x00ff
-    print("{0:#02x}, {1:#04x}".format(i,x))
-    if x in testlist:
-        print("0x{0:02x} appears more than once. Entry is 0x{1:04x}, and index is {2}".format(x, table[i], i))
-    else:
-        testlist.append(x)
+# rev16_single() computes the "reverse" CRC, given the crc and the byte.
+# Nomenclature: early crc is crc1, crc1 after normal CRC with byte is crc2
+# crc1 is composed of ch1:cl1
+# crc2 is composed of ch2:cl2
+# The table lookup is th1:tl1
+# The index of the table lookup is 'index'
+# crc2 is given, so ch2:cl2 are known and byte is known
+# Equations and procedure are as follows:
+# tl1 = cl2, so th1:tl1 and index can be found by searching for tl1 in the table
+#  and recording index and getting th1
+# cl1 = ch2^th1 (this gives half of the answer)
+# ch1 = index^byte
+# and we have ch1:cl1 which is crc1
+def rev16_single(byte, crc2, table=_CRC16_XMODEM_TABLE):
+    tl1 = crc2 & 0x00ff
+    for i in range(len(table)):
+        if ((table[i] & 0x00ff) == tl1):
+            index = i
+            break
+    table1 = table[index]
+    th1 = (table1 & 0xff00) >> 8
+    ch2 = (crc2 & 0xff00) >> 8
+    cl1 = ch2^th1
+    ch1 = index^byte
+    crc1 = (ch1 << 8) | cl1
+    return crc1 & 0xffff
 
-print("wait here")
-""" 
-forward_array = []
+
+""" forward_array = []
 
 if os.path.exists('forward_array.txt'):
     with open('forward_array.txt', 'r') as f:
@@ -73,7 +88,7 @@ else:
             forward_array.append(crc16_single(byte, crc))
 
     with open('forward_array.txt', 'w') as f:
-        json.dump(forward_array, f)
+        json.dump(forward_array, f) """
 
 #reverse_array is a list of lists. The main index is the crc value. The value at that index is a list of all crc+data combinations that mapped to that crc
 reverse_array = [[]for x in range(65536)]
@@ -83,15 +98,15 @@ if os.path.exists('reverse_array.txt'):
         reverse_array = json.load(f)
 else:
     for crc in range(65536):
-        for i in range(len(forward_array)):
-            if (forward_array[i] == crc):
-                reverse_array[crc].append(i)
+        print("crc is {0}".format(crc))
+        for data in range(256):
+            reverse_array[crc].append(rev16_single(data,crc))
+
     with open('reverse_array.txt', 'w') as f:
         json.dump(reverse_array, f)
 
-for i in range(10):
-    print(forward_array[i])
+#for i in range(10):
+#    print(forward_array[i])
 
 for i in range(10):
     print(reverse_array[i])
- """
